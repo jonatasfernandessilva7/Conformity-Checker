@@ -1,3 +1,10 @@
+"""Endpoint de demonstração para obter sugestões de um modelo Ollama.
+
+Este módulo expõe um endpoint Flask `/get_suggestions` similar ao
+`app/main.py`. Mantive a implementação como utilitário de exemplo —
+considere unificar um único ponto de entrada para a API no projeto.
+"""
+
 import ollama
 from flask import Flask, request, jsonify
 
@@ -6,6 +13,13 @@ app = Flask(__name__)
 
 @app.route('/get_suggestions', methods=['POST'])
 def get_suggestions():
+    """Handle do endpoint que retorna sugestões do modelo Ollama.
+
+    Comportamento:
+    - Verifica se a requisição é JSON.
+    - Extrai a chave `input` do JSON.
+    - Chama `ollama.chat` e retorna o conteúdo da mensagem.
+    """
     try:
         # Verifica se há dados JSON e extrai o input
         if not request.is_json:

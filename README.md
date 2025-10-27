@@ -1,82 +1,117 @@
 
-# 🔍 Compliance Checker - Verificador de Conformidade
+# 🔍 Conformity-Checker — Verificador de Conformidade
 
-## 📌 Sobre o Projeto
+Pequeno projeto para comparar um documento submetido com documentos de
+referência e estimar um índice de conformidade. Usa técnicas de NLP: TF‑IDF
+e embeddings BERT (via transformers) para medir similaridade.
 
-Este projeto é um sistema de conformidade baseado em Inteligência Artificial (IA) feito através da Iniciação Cientifíca minha presente na Universidade de São Paulo e na Universidade Federal do Ceará, que compara um documento submetido com documentos reguladores de referência. Ele analisa a similaridade textual, utilizando técnicas avançadas de processamento de linguagem natural (NLP), e retorna um índice de conformidade expresso em porcentagem.
+O repositório fornece:
 
-Este sistema pode ser aplicado em diversos cenários, como:
+- Um serviço HTTP (Flask) com dois endpoints principais:
+  - POST /get_suggestions — encaminha o texto para um modelo local via
+    Ollama e retorna a sugestão (requer Ollama + modelo instalado).
+  - POST /check_compliance — calcula uma pontuação de conformidade entre
+    dois textos usando `models.ComplianceModel` (BERT embeddings).
 
-- Auditorias e Compliance: Avaliação automática de documentos em relação a regulamentos internos ou externos.
+## 🧩 Estrutura principal
 
-- Processos Jurídicos: Comparação de contratos e documentos legais.
+Principais arquivos e pastas:
 
-- Normas Técnicas: Verificação de aderência a padrões de qualidade.
+- `app/main.py` — API Flask com endpoints `/get_suggestions` e
+  `/check_compliance`.
+- `models/compliance_model.py` — wrapper de alto nível que usa
+  `utils/similaraty.BERTSimilarity`.
+- `models/llama_sugestions.py` — exemplo de endpoint que chama Ollama
+  (similar ao `app/main.py`).
+- `utils/similaraty.py` — TF‑IDF e classe `BERTSimilarity` (transformers).
+- `utils/text_processing.py` — pré‑processamento (spaCy) e helpers.
+- `data/` — utilitários para salvar/carregar JSON e pastas para documentos.
+- `tests/test.py` — testes unitários básicos.
 
-- Segurança da Informação: Análise de conformidade com políticas de segurança.
+## � Dependências
 
+As dependências estão em `requirements.txt`. Principais pacotes:
 
-## 🚀 Tecnologias Utilizadas
+- Flask
+- torch
+- scikit-learn
+- transformers
+- spacy
 
-O projeto foi desenvolvido utilizando as seguintes tecnologias:
+Observação: modelos BERT e o pacote `spacy[en]` podem baixar arquivos
+grandes ao primeiro uso.
 
-- Python 3.8+
+## ⚡ Como executar (Windows / PowerShell)
 
-- Flask (API Web para interface com o usuário)
+1) Criar e ativar um ambiente virtual (opcional, recomendado):
 
-- NLTK e Scikit-Learn (Processamento de Texto e Similaridade Semântica)
-
-- pdfplumber (Leitura para PDFs)
-
-- SQLite (Banco de Dados para armazenamento de logs e metadados)
-
-- pytest (Testes Automatizados para garantir robustez)
-
-
-## 📂 Estrutura do Projeto
-
-```bash
- compliance_checker/
-│-- app/
-│   │-- __init__.py      # Inicializador do módulo
-│   │-- main.py          # API Flask
-│   │-- similarity.py    # Função de cálculo de similaridade
-│   ├── models/
-│   │   │-- compliance_model.py  # Modelo de conformidade baseado em IA
-│   ├── data/
-│   │   ├── reference_docs/      # Documentos regulatórios de referência
-│   │   ├── submitted_docs/      # Documentos submetidos para avaliação
-│   ├── tests/
-│   │   ├── test_api.py          # Testes da API
-│   │   ├── test_similarity.py   # Testes das funções de similaridade
-│-- README.md
-│-- requirements.txt
-│-- .gitignore
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-## 📌 Como Usar a API
+2) Instalar dependências:
 
-Faça uma requisição POST para /check_compliance enviando um JSON com os seguintes parâmetros:
-
-``` bash
-{
-  "doc_reference": "regulamento.pdf",
-  "doc_submitted": "Este documento segue as normas."
-}
+```powershell
+python -m pip install -r requirements.txt
 ```
-O índice de conformidade retornado indica quão similar o documento submetido é em relação ao documento de referência.
 
-## 🔬 Métodos Utilizados para Cálculo da Similaridade
+3) (Opcional) Instalar o modelo spaCy em inglês:
 
-O sistema utiliza diferentes abordagens para mensurar a similaridade textual:
+```powershell
+python -m spacy download en_core_web_sm
+```
 
-- TF-IDF (Term Frequency-Inverse Document Frequency): Mede a importância de palavras-chave.
+4) Executar a API Flask:
 
-- Cosine Similarity: Avalia a similaridade vetorial entre textos.
+```powershell
+python app\main.py
+```
 
-- Jaccard Similarity: Mede a interseção entre conjuntos de palavras.
+O serviço ficará disponível em http://0.0.0.0:5000 por padrão.
 
-- Leitura de PDFs: Se o documento estiver em PDF, ele será processado usando pdfplumber.
+## 🧪 Exemplos de uso
+
+- Chamar `/check_compliance` (com PowerShell curl-like):
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:5000/check_compliance -Method POST -Body (@{
+    doc_reference = "This is a regulatory document with compliance rules."
+    doc_submitted = "This document follows compliance regulations."
+} | ConvertTo-Json) -ContentType 'application/json'
+```
+
+- Chamar `/get_suggestions` (requer Ollama rodando e modelo instalado):
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:5000/get_suggestions -Method POST -Body (@{ input = "Me dê sugestões." } | ConvertTo-Json) -ContentType 'application/json'
+```
+
+## ✅ Testes
+
+Executar os testes unitários:
+
+```powershell
+python -m unittest discover -s tests -p "test*.py"
+```
+
+Obs.: os testes podem demorar na primeira execução (download de pesos
+do transformers). Eles assumem que o endpoint `/check_compliance` existe
+e que é possível carregar os modelos BERT locais.
+
+## Notas e recomendações
+
+- O endpoint `/get_suggestions` depende do Ollama (https://ollama.ai/).
+  Se não quiser usar Ollama, remova/ignore este endpoint.
+- Carregar BERT pode consumir muita memória. Para produção, considere:
+  - Pré‑computar embeddings e armazená‑los.
+  - Usar modelos menores ou serviços especializados.
+- Melhorar: adicionar tratamento de PDFs, armazenamento de documentos de
+  referência, interface web e testes mais abrangentes.
+
+## Licença
+
+Verifique a licença do projeto (se aplicável) no repositório.
 
 
 
